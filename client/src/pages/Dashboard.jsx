@@ -33,7 +33,8 @@ function Dashboard() {
         const fetchRooms = async () => {
             try {
                 const querySnapshot = await getDocs(collection(db, "rooms"));
-                const rooms = querySnapshot.docs.map(doc => doc.data());
+                let rooms = querySnapshot.docs.map(doc => doc.data());
+                rooms = rooms.filter(room => room.pub_or_pri === "public");
                 setListOfPublicRooms(rooms);
             } catch (error) {
                 console.error("Error fetching rooms: ", error);
@@ -42,8 +43,6 @@ function Dashboard() {
 
         fetchRooms();
     }, []);
-
-    console.log(auth.currentUser)
 
     useEffect(() => {
         const createUser = async () => {

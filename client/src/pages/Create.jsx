@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
+import { getFirestore, collection, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { getDocs, getDoc, query, where } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import { nanoid } from 'nanoid';
+import { useNavigate } from 'react-router-dom';
 
 const Create = () => {
     const [isPrivate, setIsPrivate] = useState(false);
@@ -7,32 +12,90 @@ const Create = () => {
     const [searchResult, setSearchResult] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const handleSearch = (query) => {
+    const [roomName, setRoomName] = useState("");
+    const [roomDescription, setRoomDescription] = useState("");
+
+    const navigate = useNavigate();
+
+    const handleSearch = async (emailQuery) => {
         setLoading(true);
-        // Simulate an API call
-        setTimeout(() => {
-            // This is where you would normally call your search API
-            const dummyResults = [
-                { _id: 1, name: 'Kohli' },
-                { _id: 2, name: 'Ganguly' },
-                { _id: 3, name: 'Dhoni' },
-                { _id: 4, name: 'Sachin' },
-                { _id: 5, name: 'Dravid' }
-            ];
-            setSearchResult(dummyResults.filter(user => user.name.toLowerCase().includes(query.toLowerCase())));
-            setLoading(false);
-        }, 500);
+
+        // Query the "users" collection in Firestore
+        const usersCollection = collection(db, 'users');
+        const userQuery = query(usersCollection, where('email', '==', emailQuery));
+
+        try {
+            const querySnapshot = await getDocs(userQuery);
+            const results = [];
+            querySnapshot.forEach((doc) => {
+                results.push(doc.data());
+            });
+            setSearchResult(results);
+        } catch (error) {
+            console.error('Error searching users:', error);
+        }
+
+        setLoading(false);
     };
 
     const handleDelete = (user) => {
-        setSelectedUsers(selectedUsers.filter(selectedUser => selectedUser._id !== user._id));
+        setSelectedUsers(selectedUsers.filter(selectedUser => selectedUser.email !== user.email));
     };
 
     const selectedGroupHandler = (user) => {
-        if (!selectedUsers.find(selectedUser => selectedUser._id === user._id)) {
+        if (!selectedUsers.find(selectedUser => selectedUser.email === user.email)) {
             setSelectedUsers([...selectedUsers, user]);
         }
     };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const userEmails = [];
+        selectedUsers.map(user => userEmails.push(user.email));
+        userEmails.push(auth.currentUser.email);
+
+        const modelId = nanoid();
+        try {
+            // Create room in Firestore
+            const roomRef = await addDoc(collection(db, 'rooms'), {
+                room_name: roomName,
+                pub_or_pri: (isPrivate) ? "private" : "public",
+                admin: (isPrivate) ? auth.currentUser.email : "",
+                members: (isPrivate) ? userEmails : [],
+                description: roomDescription,
+                room_id: roomName + "#" + modelId,
+                // Add any other necessary room details
+            });
+
+            const roomId = roomRef.id;
+
+            if (isPrivate) {
+                // Update each user's document with the new room ID
+                const userUpdates = userEmails.map(async (user) => {
+                    const usersCollection = collection(db, 'users');
+                    const userQuery = query(usersCollection, where('email', '==', user));
+                    const querySnapshot = await getDocs(userQuery);
+
+                    const updatePromises = querySnapshot.docs.map((userDoc) => {
+                        const userRef = doc(db, 'users', userDoc.id);
+                        return updateDoc(userRef, {
+                            private_rooms: arrayUnion(roomId)
+                        });
+                    });
+
+                    await Promise.all(updatePromises);
+                });
+
+                await Promise.all(userUpdates);
+            }
+
+            console.log('Room created successfully with ID:', roomId);
+            navigate('/chat',{state:{room_id:roomRef.room_id}});
+
+        } catch (error) {
+            console.error('Error creating room:', error);
+        }
+    }
 
     return (
         <>
@@ -44,6 +107,7 @@ const Create = () => {
                         <input
                             type="text"
                             id="roomName"
+                            value={roomName} onChange={(e) => setRoomName(e.target.value)}
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             placeholder="Enter room name"
                             required
@@ -54,6 +118,7 @@ const Create = () => {
                         <input
                             type="text"
                             id="description"
+                            value={roomDescription} onChange={(e) => setRoomDescription(e.target.value)}
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             placeholder="Enter room description"
                             required
@@ -84,7 +149,7 @@ const Create = () => {
                             <label htmlFor="privateNo" className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">No</label>
                         </div>
                     </div>
-                    
+
                     {isPrivate && (
                         <>
                             <div className="mb-5">
@@ -100,7 +165,7 @@ const Create = () => {
                             <div className="w-full flex flex-wrap mb-5">
                                 {selectedUsers.map((selectedUser) => (
                                     <div key={selectedUser._id} className="bg-blue-500 text-white rounded-full px-3 py-1 m-1 cursor-pointer" onClick={() => handleDelete(selectedUser)}>
-                                        {selectedUser.name}
+                                        {selectedUser.email}
                                     </div>
                                 ))}
                             </div>
@@ -109,7 +174,7 @@ const Create = () => {
                             ) : (
                                 searchResult.slice(0, 4).map((user) => (
                                     <div key={user._id} className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg p-2 m-1 cursor-pointer" onClick={() => selectedGroupHandler(user)}>
-                                        {user.name}
+                                        {user.email}
                                     </div>
                                 ))
                             )}
@@ -117,7 +182,7 @@ const Create = () => {
                     )}
 
                     <button
-                        type="submit"
+                        type="submit" onClick={handleSubmit}
                         className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                     >
                         Submit
