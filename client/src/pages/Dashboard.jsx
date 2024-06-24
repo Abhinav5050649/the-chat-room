@@ -4,7 +4,7 @@ import { loadSlim } from "tsparticles-slim";
 import Navbar from "../components/Navbar";
 import { auth, db } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { getDoc, addDoc, collection, serverTimestamp, where, getDocs, QuerySnapshot } from "firebase/firestore";
+import { getDoc, addDoc, collection, serverTimestamp, doc, where, getDocs, QuerySnapshot } from "firebase/firestore";
 import { Link } from "react-router-dom";
 
 function Dashboard() {
@@ -26,8 +26,8 @@ function Dashboard() {
     const { uid, displayName, photoURL, email } = auth.currentUser;
 
     const [listOfPublicRooms, setListOfPublicRooms] = useState();
-
     const [currentUser, setCurrentUser] = useState();
+    const [listOfPrivateRooms, setListOfPrivateRooms] = useState([]);
 
     useEffect(() => {
         const fetchRooms = async () => {
@@ -45,9 +45,27 @@ function Dashboard() {
     }, []);
 
     useEffect(() => {
+        const getPrivateRooms = async (privateRooms) => {
+            try {
+                const roomPromises = privateRooms.map(async (roomId) => {
+                    const docRef = doc(db, "rooms", roomId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        return docSnap.data();
+                    } else {
+                        console.error("No such document: ", roomId);
+                    }
+                });
+
+                const rooms = await Promise.all(roomPromises);
+                setListOfPrivateRooms(rooms.filter(room => room !== undefined));
+            } catch (error) {
+                console.error("Error fetching private rooms: ", error);
+            }
+        };
+
         const createUser = async () => {
             try {
-
                 const querySnapshot = await getDocs(collection(db, "users"));
                 const userDetails = querySnapshot.docs.map(doc => doc.data()).filter(user => user.email === email);
 
@@ -57,11 +75,20 @@ function Dashboard() {
                         private_rooms: []
                     });
 
-                    setCurrentUser(docRef);
+                    const newUser = {
+                        id: docRef.id,
+                        email,
+                        private_rooms: []
+                    };
+
+                    setCurrentUser(newUser);
                     console.log("Document written with ID: ", docRef.id);
+                    await getPrivateRooms(newUser.private_rooms);
                 } else {
                     console.log("User already exists");
-                    setCurrentUser(userDetails[0]);
+                    const existingUser = userDetails[0];
+                    setCurrentUser(existingUser);
+                    await getPrivateRooms(existingUser.private_rooms);
                 }
             } catch (error) {
                 console.error("Error creating user: ", error);
@@ -69,27 +96,7 @@ function Dashboard() {
         };
 
         createUser();
-    }, []);
-
-    const [listOfPrivateRooms, setListOfPrivateRooms] = useState([]);
-
-    useEffect(() => {
-        const getPrivateRooms = async () => {
-            try {
-                currentUser.private_rooms.forEach(async (roomId) => {
-                    const doc = await getDoc(collection(db, "rooms", roomId));
-                    setListOfPrivateRooms((prevRooms) => {
-                        return [...prevRooms, doc.data()];
-                    });
-                });
-
-            } catch (error) {
-                console.error("Error fetching private rooms: ", error);
-            }
-        }
-
-        getPrivateRooms();
-    }, [])
+    }, [email]);
 
     return (
         <div className="relative min-h-screen">
@@ -172,7 +179,7 @@ function Dashboard() {
                 <Navbar />
             </div>
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
-                <h1 className="mb-8 text-3xl font-bold text-center">Dashboard</h1>
+                <h1 className="mb-8 text-3xl font-bold text-center">Chat Rooms</h1>
                 <div className="flex space-x-4">
                     <div className="relative inline-block text-left">
                         <button
