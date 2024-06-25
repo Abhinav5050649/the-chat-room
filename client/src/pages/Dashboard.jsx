@@ -214,7 +214,7 @@ function Dashboard() {
                                     {(listOfPublicRooms.length !== 0) ? listOfPublicRooms.map((room) => (
                                         <li key={room.room_id}>
                                             <Link
-                                                to={{ pathname: "/chat", state: { roomId: room.room_id } }}
+                                                to={{ pathname: `/chat/${room.room_id}`}}
                                                 className="block px-4 py-2 text-black hover:bg-gray-100 truncate"
                                             >
                                                 {room.room_name}
@@ -262,7 +262,7 @@ function Dashboard() {
                                     {(listOfPrivateRooms.length !== 0) ? listOfPrivateRooms.map((room) => (
                                         <li key={room.room_id}>
                                             <Link
-                                                to={{ pathname: "/chat", state: { roomId: room.room_id } }}
+                                                to={{ pathname: `/chat/${room.room_id}`}}
                                                 className="block px-4 py-2 text-black hover:bg-gray-100"
                                             >
                                                 {room.room_name}

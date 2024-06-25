@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { auth, db } from "../firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
-const SendMessage = ({scroll}) => {
+const SendMessage = ({scroll, roomId}) => {
 
     const [message, setMessage] = useState("");
 
@@ -17,6 +17,7 @@ const SendMessage = ({scroll}) => {
             text: message,
             name: displayName,
             avatar: photoURL,
+            room_id: roomId,
             createdAt: serverTimestamp(),
             uid,
         });

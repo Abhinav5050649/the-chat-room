@@ -5,24 +5,29 @@ import {
     orderBy,
     onSnapshot,
     limit,
+    where
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import Message from "../components/Message";
 import SendMessage from "../components/SendMessage";
 import Navbar from "../components/Navbar";
+import { useParams } from "react-router-dom";
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
     const scroll = useRef();
-    
+    const { roomId } = useParams();
+
     useEffect(() => {
         const q = query(
             collection(db, "messages"),
+            where("room_id", "==", roomId),
             orderBy("createdAt", "desc"),
             limit(50)
         );
 
         const unsubscribe = onSnapshot(q, (QuerySnapshot) => {
+
             const fetchedMessages = [];
             QuerySnapshot.forEach((doc) => {
                 fetchedMessages.push({ ...doc.data(), id: doc.id });
@@ -46,7 +51,7 @@ const Chat = () => {
                 </div>
                 {/* when a new message enters the chat, the screen scrolls down to the scroll div */}
                 <span ref={scroll}></span>
-                <SendMessage scroll={scroll} />
+                <SendMessage scroll={scroll} roomId={roomId} />
             </main>
         </>
     );

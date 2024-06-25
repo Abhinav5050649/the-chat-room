@@ -19,7 +19,7 @@ function App() {
         {/*Add Protected Route component here which utilises user details from google auth above*/}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/create" element={<ProtectedRoute><Create /></ProtectedRoute>} />
-        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path='/chat/:roomId' element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

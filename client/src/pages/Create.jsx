@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { getFirestore, collection, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
-import { getDocs, getDoc, query, where } from 'firebase/firestore';
+import { getDocs, getDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { nanoid } from 'nanoid';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +63,7 @@ const Create = () => {
                 admin: (isPrivate) ? auth.currentUser.email : "",
                 members: (isPrivate) ? userEmails : [],
                 description: roomDescription,
-                room_id: roomName + "#" + modelId,
+                room_id: roomName.trim() + "_" + modelId,
                 // Add any other necessary room details
             });
 
@@ -89,8 +89,9 @@ const Create = () => {
                 await Promise.all(userUpdates);
             }
 
-            console.log('Room created successfully with ID:', roomId);
-            navigate('/chat',{state:{room_id:roomRef.room_id}});
+            const roomId_Temp = roomName.trim() + "_" + modelId;
+            
+            navigate(`/chat/${roomId_Temp}`);
 
         } catch (error) {
             console.error('Error creating room:', error);
