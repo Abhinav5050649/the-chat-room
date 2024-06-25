@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { auth, db } from "../firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
-const SendMessage = ({scroll, roomId}) => {
+const SendMessage = ({ scroll, roomId }) => {
 
     const [message, setMessage] = useState("");
 
@@ -26,7 +26,10 @@ const SendMessage = ({scroll, roomId}) => {
     };
 
     return (
-        <form onSubmit={(event) => sendMessage(event)} className="send-message">
+        <form
+            onSubmit={(event) => sendMessage(event)}
+            className="fixed bottom-0 w-full p-5 bg-orange-200 flex"
+        >
             <label htmlFor="messageInput" hidden>
                 Enter Message
             </label>
@@ -36,10 +39,15 @@ const SendMessage = ({scroll, roomId}) => {
                 type="text"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                className="form-input__input"
+                className="h-10 p-2.5 rounded-l-md border-none flex-grow bg-white text-[#1c2c4c] text-base placeholder-[#ddd] focus:outline-none focus:border-b-[1px] focus:border-[#7cc5d9]"
                 placeholder="type message..."
             />
-            <button type="submit">Send</button>
+            <button
+                type="submit"
+                className="w-[70px] h-10 p-2.5 rounded-r-md text-white border border-white bg-gray-900 font-semibold"
+            >
+                Send
+            </button>
         </form>
     );
 };

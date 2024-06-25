@@ -12,6 +12,7 @@ import Message from "../components/Message";
 import SendMessage from "../components/SendMessage";
 import Navbar from "../components/Navbar";
 import { useParams } from "react-router-dom";
+import Tab from "../components/Tab";
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
@@ -43,8 +44,9 @@ const Chat = () => {
     return (
         <>
             <Navbar />
+            <Tab/>
             <main className="chat-box">
-                <div className="messages-wrapper">
+                <div className="p-2 mb-1">
                     {messages?.map((message) => (
                         <Message key={message.id} message={message} />
                     ))}
