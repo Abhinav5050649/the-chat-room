@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
-import { getDocs, collection, addDoc, deleteDoc, doc } from "firebase/firestore";
+import { getDocs, collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 const Tab = ({ roomId }) => {
     const [isDropdownVisible, setDropdownVisible] = useState(false);
-    const [isDeleteVisible, setDeleteVisible] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
+    const [adminStatus, setAdminStatus] = useState(false);
 
     const navigate = useNavigate();
 
     const toggleDropdown = () => {
         setDropdownVisible(!isDropdownVisible);
-    };
-
-    const toggleDeleteButton = (visible) => {
-        setDeleteVisible(visible);
     };
 
     const [pub, setPub] = useState(false);
@@ -31,9 +27,23 @@ const Tab = ({ roomId }) => {
                 const userRef = doc(db, "users", searchEmail);
                 const userSnapshot = await getDocs(userRef);
                 if (userSnapshot.exists()) {
-                    //add logic to add user to the room
-                }
-                else {
+                    userSnapshot[0].members.push(roomId);
+                    await updateDoc(userSnapshot[0].id, {
+                        members: userSnapshot[0].members
+                    });
+
+                    const groupRef = doc(db, "rooms", roomId);
+                    const groupSnapshot = await getDocs(groupRef);
+                    groupSnapshot[0].members.push(searchEmail);
+                    await updateDoc(groupSnapshot[0].id, {
+                        members: groupSnapshot[0].members
+                    });
+
+
+                    members.push(searchEmail);
+
+                    alert("User details updated successfully!");
+                } else {
                     alert("User does not exist in the database!");
                 }
             }
@@ -49,12 +59,23 @@ const Tab = ({ roomId }) => {
         try {
             if (!members.includes(searchEmail)) {
                 alert("User does not exist in the room!");
-            }
-            else {
+            } else {
                 const userRef = doc(db, "users", searchEmail);
                 const userSnapshot = await getDocs(userRef);
                 if (userSnapshot.exists()) {
-                    await deleteDoc(userRef);
+                    await updateDoc(userSnapshot[0].id, {
+                        members: userSnapshot[0].members.remove(roomId)
+                    });
+
+                    const groupRef = doc(db, "rooms", roomId);
+                    const groupSnapshot = await getDocs(groupRef);
+                    groupSnapshot[0].members.remove(searchEmail);
+                    await updateDoc(groupSnapshot[0].id, {
+                        members: groupSnapshot[0].members
+                    });
+
+                    members.remove(searchEmail);
+                    alert("User removed successfully!");
                 }
                 else {
                     alert("User does not exist in the database!");
@@ -73,11 +94,10 @@ const Tab = ({ roomId }) => {
             setRoomDetails(roomInfo[0]);
             if (roomInfo[0].pub_or_pri === "public") {
                 setPub(true);
-            }
-
-            if (roomInfo[0].admin === auth.currentUser.email) {
-                toggleDeleteButton(true);
-                //change this logic so that only admins can add and delete users
+            } else {
+                if (roomInfo[0].admin === auth.currentUser.email) {
+                    setAdminStatus(true);
+                }
             }
         };
 
@@ -91,8 +111,13 @@ const Tab = ({ roomId }) => {
             }
         }
 
+        const checkMember = () => {
+            if (!members.includes(auth.currentUser.email)) navigate("/dashboard");
+        }
+
         getRoomDetails();
         getMembers();
+        checkMember();
     }, []);
 
 
@@ -161,13 +186,14 @@ const Tab = ({ roomId }) => {
                             </div>
                         )}
                     </li>
-                    {!pub && (
+                    {adminStatus && (
                         <div className="flex items-center space-x-2 ml-auto">
                             <li className="me-2 mr-4" role="presentation">
                                 <input type="text" className="p-2 border rounded-lg" value={searchEmail} onChange={(e) => setSearchEmail(e.target.value)} placeholder="Search..." />
                             </li>
                             <li className="me-2" role="presentation">
                                 <button
+                                    onClick={() => { handleAddUser }}
                                     className="inline-block p-2 mr-4 border-b rounded-t-lg bg-white text-black"
                                     id="add-tab"
                                     type="button"
@@ -178,20 +204,19 @@ const Tab = ({ roomId }) => {
                                     Add
                                 </button>
                             </li>
-                            {isDeleteVisible && (
-                                <li role="presentation" className="conditional-delete">
-                                    <button
-                                        className="inline-block p-2 border-b mr-4 rounded-t-lg bg-white text-black"
-                                        id="delete-tab"
-                                        type="button"
-                                        role="tab"
-                                        aria-controls="delete"
-                                        aria-selected="false"
-                                    >
-                                        Delete
-                                    </button>
-                                </li>
-                            )}
+                            <li role="presentation" className="conditional-delete">
+                                <button
+                                    onClick={() => { handleDeleteUser }}
+                                    className="inline-block p-2 border-b mr-4 rounded-t-lg bg-white text-black"
+                                    id="delete-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="delete"
+                                    aria-selected="false"
+                                >
+                                    Delete
+                                </button>
+                            </li>
                         </div>)}
                 </ul>
             </div>
