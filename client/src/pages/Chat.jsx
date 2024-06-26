@@ -43,17 +43,16 @@ const Chat = () => {
 
     return (
         <>
-            <Navbar />
-            <Tab/>
+            <Tab roomId={roomId}/>
             <main className="chat-box">
-                <div className="p-2 mb-1">
+                <div className="p-1 mb-2">
                     {messages?.map((message) => (
                         <Message key={message.id} message={message} />
                     ))}
                 </div>
                 {/* when a new message enters the chat, the screen scrolls down to the scroll div */}
                 <span ref={scroll}></span>
-                <SendMessage scroll={scroll} roomId={roomId} />
+                <SendMessage className="mt-1" scroll={scroll} roomId={roomId} />
             </main>
         </>
     );

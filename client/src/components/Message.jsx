@@ -5,7 +5,7 @@ const Message = ({ message }) => {
     const [user] = useAuthState(auth);
 
     return (
-        <div className="p-2 mb-2">
+        <div className="p-1 mb-">
             <div
                 className={`chat-bubble 
       ${message.uid === user.uid ?
@@ -20,7 +20,7 @@ const Message = ({ message }) => {
                     alt="user avatar"
                 />
                 <div>
-                    <p className="font-bold mb-2 text-sm text-[#1c2c4c]">{message.name}</p>
+                    <p className="font-bold mb-1 text-sm text-[#1c2c4c]">{message.name}</p>
                     <p className="break-all">{message.text}</p>
                 </div>
             </div>

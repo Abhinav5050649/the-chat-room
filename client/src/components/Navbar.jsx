@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+import { GoogleAuthProvider, signInWithRedirect, signInWithPopup } from "firebase/auth";
 import { Link, useNavigate } from 'react-router-dom';
 
 function Navbar() {
@@ -18,8 +18,7 @@ function Navbar() {
     }, []);
 
     const handleGoogleSignIn = () => {
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
+        signInWithPopup(auth, new GoogleAuthProvider());
     };
 
     const handleGoogleSignOut = () => {

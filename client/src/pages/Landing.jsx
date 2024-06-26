@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+import { GoogleAuthProvider, signInWithRedirect, signInWithPopup } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
 import Particles from "react-particles";
 import { loadSlim } from "tsparticles-slim";
@@ -29,8 +29,7 @@ function Landing() {
     }, [loading, user]);
 
     const handleGoogleSignIn = () => {
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
+        signInWithPopup(auth, new GoogleAuthProvider());
     };
 
     return (
