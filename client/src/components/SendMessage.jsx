@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { auth, db } from "../firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, query, where, getDocs, collection, serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 const SendMessage = ({ scroll, roomId }) => {
+
+    const navigate = useNavigate();
 
     const [message, setMessage] = useState("");
 
@@ -12,7 +15,19 @@ const SendMessage = ({ scroll, roomId }) => {
             alert("Enter valid message");
             return;
         }
-        const { uid, displayName, photoURL } = auth.currentUser;
+        const { uid, displayName, photoURL, email } = auth.currentUser;
+        const roomsRef = collection(db, "rooms");
+        const roomQuery = query(roomsRef, where("room_id", "==", roomId));
+        const querySnapshot = await getDocs(roomQuery);
+        const room = querySnapshot.docs[0].data();
+        
+        if (room.pub_or_pri === "private") {
+            if (!room.members.includes(email)) {
+                console.log("User is not a member of this room");
+                navigate("/dashboard");
+            }
+        }
+
         await addDoc(collection(db, "messages"), {
             text: message,
             name: displayName,
@@ -22,13 +37,13 @@ const SendMessage = ({ scroll, roomId }) => {
             uid,
         });
         setMessage("");
-        scroll.current.scrollIntoView({ behavior: "smooth" });
+        scroll.current.scroll({ behavior: "smooth" });
     };
 
     return (
         <form
             onSubmit={(event) => sendMessage(event)}
-            className="fixed bottom-0 w-full p-5 bg-orange-200 flex"
+            className="fixed bottom-0 w-full p-2 flex"
         >
             <label htmlFor="messageInput" hidden>
                 Enter Message
@@ -39,12 +54,12 @@ const SendMessage = ({ scroll, roomId }) => {
                 type="text"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                className="h-10 p-2.5 rounded-l-md border-none flex-grow bg-white text-[#1c2c4c] text-base placeholder-[#ddd] focus:outline-none focus:border-b-[1px] focus:border-[#7cc5d9]"
+                className="h-9 p-2 rounded-l-md border-none flex-grow bg-white text-[#1c2c4c] text-base placeholder-[#ddd] focus:outline-none focus:border-b-[1px] focus:border-[#7cc5d9]"
                 placeholder="type message..."
             />
             <button
                 type="submit"
-                className="w-[70px] h-10 p-2.5 rounded-r-md text-white border border-white bg-gray-900 font-semibold"
+                className="w-[70px] h-9 p-2 rounded-r-md text-white border border-white bg-gray-900 font-semibold"
             >
                 Send
             </button>

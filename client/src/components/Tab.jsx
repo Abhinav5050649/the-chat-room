@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
-import { getDocs, collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { getDocs, where, query, collection, addDoc, getDoc, doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 const Tab = ({ roomId }) => {
@@ -24,67 +24,112 @@ const Tab = ({ roomId }) => {
     const handleAddUser = async () => {
         try {
             if (!members.includes(searchEmail)) {
-                const userRef = doc(db, "users", searchEmail);
-                const userSnapshot = await getDocs(userRef);
-                if (userSnapshot.exists()) {
-                    userSnapshot[0].members.push(roomId);
-                    await updateDoc(userSnapshot[0].id, {
-                        members: userSnapshot[0].members
-                    });
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("email", "==", searchEmail));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userDoc = querySnapshot.docs[0];
+                    const userData = userDoc.data();
+                    if (!userData.private_rooms.includes(roomId)) {
+                        userData.private_rooms.push(roomId);
+                        await updateDoc(userDoc.ref, {
+                            private_rooms: userData.private_rooms
+                        });
+                    }
 
-                    const groupRef = doc(db, "rooms", roomId);
-                    const groupSnapshot = await getDocs(groupRef);
-                    groupSnapshot[0].members.push(searchEmail);
-                    await updateDoc(groupSnapshot[0].id, {
-                        members: groupSnapshot[0].members
-                    });
+                    const roomsRef = collection(db, "rooms");
+                    const roomQuery = query(roomsRef, where("room_id", "==", roomId));
+                    const roomQuerySnapshot = await getDocs(roomQuery);
 
+                    if (!roomQuerySnapshot.empty) {
+                        const roomDoc = roomQuerySnapshot.docs[0];
+                        const roomData = roomDoc.data();
 
-                    members.push(searchEmail);
+                        // Check if the room already includes the user
+                        if (!roomData.members.includes(searchEmail)) {
+                            roomData.members.push(searchEmail);
+                            await updateDoc(roomDoc.ref, {
+                                members: roomData.members
+                            });
+                        }
 
-                    alert("User details updated successfully!");
+                        // Update local members array
+                        members.push(searchEmail);
+                        alert("User details updated successfully!");
+                    } else {
+                        alert("Room does not exist in the database!");
+                    }
                 } else {
                     alert("User does not exist in the database!");
                 }
-            }
-            else {
+            } else {
                 alert("User already exists in the room!");
             }
+
+            setSearchEmail("");
         } catch (error) {
             console.error("Error adding user: ", error);
         }
-    }
+    };
+
 
     const handleDeleteUser = async () => {
         try {
+
             if (!members.includes(searchEmail)) {
                 alert("User does not exist in the room!");
-            } else {
-                const userRef = doc(db, "users", searchEmail);
-                const userSnapshot = await getDocs(userRef);
-                if (userSnapshot.exists()) {
-                    await updateDoc(userSnapshot[0].id, {
-                        members: userSnapshot[0].members.remove(roomId)
-                    });
-
-                    const groupRef = doc(db, "rooms", roomId);
-                    const groupSnapshot = await getDocs(groupRef);
-                    groupSnapshot[0].members.remove(searchEmail);
-                    await updateDoc(groupSnapshot[0].id, {
-                        members: groupSnapshot[0].members
-                    });
-
-                    members.remove(searchEmail);
-                    alert("User removed successfully!");
-                }
-                else {
-                    alert("User does not exist in the database!");
-                }
+                return;
             }
+
+            // Query the user collection to find the user document by email
+            const usersRef = collection(db, "users");
+            const userQuery = query(usersRef, where("email", "==", searchEmail));
+            const userQuerySnapshot = await getDocs(userQuery);
+
+            if (!userQuerySnapshot.empty) {
+                const userDoc = userQuerySnapshot.docs[0];
+                const userData = userDoc.data();
+
+                // Remove the roomId from the user's private_rooms array
+                const updatedUserPrivateRooms = userData.private_rooms.filter(room => room !== roomId);
+                await updateDoc(userDoc.ref, {
+                    private_rooms: updatedUserPrivateRooms
+                });
+
+                // Query the room collection to find the room document by roomId
+                const roomsRef = collection(db, "rooms");
+                const roomQuery = query(roomsRef, where("room_id", "==", roomId));
+                const roomQuerySnapshot = await getDocs(roomQuery);
+
+                if (!roomQuerySnapshot.empty) {
+                    const roomDoc = roomQuerySnapshot.docs[0];
+                    const roomData = roomDoc.data();
+
+                    // Remove the user's email from the room's members array
+                    const updatedRoomMembers = roomData.members.filter(member => member !== searchEmail);
+                    await updateDoc(roomDoc.ref, {
+                        members: updatedRoomMembers
+                    });
+
+                    // Update local members array
+                    const updatedMembers = members.filter(member => member !== searchEmail);
+                    // Assuming 'members' is a state or similar
+                    setMembers(updatedMembers);
+
+                    alert("User removed successfully!");
+                } else {
+                    alert("Room does not exist in the database!");
+                }
+            } else {
+                alert("User does not exist in the database!");
+            }
+            
+            setSearchEmail("");
         } catch (error) {
-            console.error("Error adding user: ", error);
+            console.error("Error removing user: ", error);
         }
-    }
+    };
+
 
     useEffect(() => {
         const getRoomDetails = async () => {
@@ -102,22 +147,19 @@ const Tab = ({ roomId }) => {
         };
 
         const getMembers = async () => {
-            if (roomDetails !== null) {
-                if (roomDetails.members.length > 0 || roomDetails.members !== undefined || roomDetails.members !== null) {
-                    roomDetails.members.forEach((member) => {
-                        setMembers([...members, member]);
-                    })
+            if (roomDetails !== null && roomDetails !== undefined) {
+                if (roomDetails.pub_or_pri === "private") {
+                    if (roomDetails.members.length > 0 && roomDetails.members !== undefined && roomDetails.members !== null) {
+                        roomDetails.members.forEach((member) => {
+                            setMembers([...members, member]);
+                        })
+                    }
                 }
             }
         }
 
-        const checkMember = () => {
-            if (!members.includes(auth.currentUser.email)) navigate("/dashboard");
-        }
-
         getRoomDetails();
         getMembers();
-        checkMember();
     }, []);
 
 
@@ -193,7 +235,7 @@ const Tab = ({ roomId }) => {
                             </li>
                             <li className="me-2" role="presentation">
                                 <button
-                                    onClick={() => { handleAddUser }}
+                                    onClick={handleAddUser}
                                     className="inline-block p-2 mr-4 border-b rounded-t-lg bg-white text-black"
                                     id="add-tab"
                                     type="button"
@@ -206,7 +248,7 @@ const Tab = ({ roomId }) => {
                             </li>
                             <li role="presentation" className="conditional-delete">
                                 <button
-                                    onClick={() => { handleDeleteUser }}
+                                    onClick={handleDeleteUser}
                                     className="inline-block p-2 border-b mr-4 rounded-t-lg bg-white text-black"
                                     id="delete-tab"
                                     type="button"

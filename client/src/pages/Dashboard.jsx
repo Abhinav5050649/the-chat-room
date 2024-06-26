@@ -4,7 +4,7 @@ import { loadSlim } from "tsparticles-slim";
 import Navbar from "../components/Navbar";
 import { auth, db } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { getDoc, addDoc, collection, serverTimestamp, doc, where, getDocs, QuerySnapshot } from "firebase/firestore";
+import { getDoc, addDoc, collection, query, serverTimestamp, doc, where, getDocs, QuerySnapshot } from "firebase/firestore";
 import { Link } from "react-router-dom";
 
 function Dashboard() {
@@ -48,10 +48,11 @@ function Dashboard() {
         const getPrivateRooms = async (privateRooms) => {
             try {
                 const roomPromises = privateRooms.map(async (roomId) => {
-                    const docRef = doc(db, "rooms", roomId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        return docSnap.data();
+                    const roomsRef = collection(db, "rooms");
+                    const roomQuery = query(roomsRef, where("room_id", "==", roomId));
+                    const querySnapshot = await getDocs(roomQuery);
+                    if (!querySnapshot.empty) {
+                        return querySnapshot.docs[0].data();
                     } else {
                         console.error("No such document: ", roomId);
                     }
@@ -96,7 +97,7 @@ function Dashboard() {
         };
 
         createUser();
-    }, [email]);
+    }, []);
 
     return (
         <div className="relative min-h-screen">
@@ -214,7 +215,7 @@ function Dashboard() {
                                     {(listOfPublicRooms.length !== 0) ? listOfPublicRooms.map((room) => (
                                         <li key={room.room_id}>
                                             <Link
-                                                to={{ pathname: `/chat/${room.room_id}`}}
+                                                to={{ pathname: `/chat/${room.room_id}` }}
                                                 className="block px-4 py-2 text-black hover:bg-gray-100 truncate"
                                             >
                                                 {room.room_name}
@@ -262,7 +263,7 @@ function Dashboard() {
                                     {(listOfPrivateRooms.length !== 0) ? listOfPrivateRooms.map((room) => (
                                         <li key={room.room_id}>
                                             <Link
-                                                to={{ pathname: `/chat/${room.room_id}`}}
+                                                to={{ pathname: `/chat/${room.room_id}` }}
                                                 className="block px-4 py-2 text-black hover:bg-gray-100"
                                             >
                                                 {room.room_name}
