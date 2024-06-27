@@ -75,7 +75,7 @@ const Tab = ({ roomId }) => {
 
     const handleDeleteUser = async () => {
         try {
-
+            console.log("Members: ", members);
             if (!members.includes(searchEmail)) {
                 alert("User does not exist in the room!");
                 return;
@@ -160,7 +160,7 @@ const Tab = ({ roomId }) => {
 
         getRoomDetails();
         getMembers();
-    }, []);
+    }, [members]);
 
 
     return (

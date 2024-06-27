@@ -67,7 +67,7 @@ const Create = () => {
                 // Add any other necessary room details
             });
 
-            const roomId = roomRef.id;
+            const roomId = roomName.trim() + "_" + modelId;
 
             if (isPrivate) {
                 // Update each user's document with the new room ID
