@@ -3,7 +3,9 @@
 
 A Real-Time Chat Application made to recreate the chat room experience using Firebase instead of Web Sockets.
 
-I urge each and every one of you to read the entire README carefully, before you proceed with exploring the code.
+With this project, users can create public and private chat rooms, both. 
+
+I urge each and every one of you to read the entire README carefully (especially the "Word of Caution" Section), before you proceed with exploring the code.
 
 
 ## Tech Stack
