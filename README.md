@@ -189,11 +189,11 @@ This project was created as a means to experiment with Firebase and to check it'
 
 **The fact that this is a Chat Application**, means that **we will frequently query the database for updates**, **as a result** of which, **one may eventually end up exhausting their Daily Read Limits of Firestore** (Happened to me while testing, so I know what I am talking about). 
 
-However, chances of this happening under normal circumstances is not high.
+**However, chances of this happening under normal circumstances is not high**.
 
 All I will say is that given these factors alone, I have not deployed the application. 
 
-So, I urge all those who try to check this project out, please be careful. 
+So, I urge all those who explore this project to be careful. 
 ## References Used
 
  - [How to Build a Real-time Chat App with ReactJS and Firebase](https://www.freecodecamp.org/news/building-a-real-time-chat-app-with-reactjs-and-firebase/)
