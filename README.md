@@ -66,6 +66,7 @@ Set up a Firebase project for authentication and Firestore as per your convenien
 - Click on "Add Project" and follow the prompts to create a new project.
 - Once the project is created, go to the "Authentication" section and enable the sign-in methods you want to use.
 - Go to the "Firestore Database" section and create a database.
+- While creating the database, ensure that you allow CRUD Operations' access to the database. Refer to the link in the references to get more clarity about this.
 
 ### 4) Configure Firebase
 
@@ -98,6 +99,8 @@ export { auth, firestore };
 ### 5) Create Collections
 
 Create the collections as per the "Database" section of the README and initialize them with a few dummy documents.
+
+**Note:** You will have to create indexing for the Messages Collection when prompted to by Firestore.
 
 #### Collections:
 
